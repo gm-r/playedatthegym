@@ -1,0 +1,26 @@
+node_modules
+.DS_Store
+dist
+dist-ssr
+*.local
+.env
+.nitro
+.tanstack
+.wrangler
+.output
+.vinxi
+__unconfig*
+todos.json
+
+# Local Netlify folder
+.netlify
+
+# Generated files
+convex/_generated/
+src/routeTree.gen.ts
+
+# Scaffolding metadata
+.cta.json
+
+# Local tool settings
+.claude/
