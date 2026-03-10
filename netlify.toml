@@ -1,6 +1,6 @@
 [build]
   command = "npx convex codegen && vite build"
-  publish = "dist"
+  publish = "dist/client"
 
 [build.environment]
   SECRETS_SCAN_OMIT_KEYS = "VITE_CONVEX_URL"
