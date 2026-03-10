@@ -1,6 +1,9 @@
 [build]
-  command = "vite build"
-  dir = "dist/client"
+  # Generate Convex client before building the app
+  command = "npx convex codegen && vite build"
+  # Vite outputs the production build to the dist directory by default
+  publish = "dist"
+
 [dev]
   command = "npm run dev"
   targetPort = 3000
