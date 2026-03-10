@@ -1,8 +1,9 @@
 [build]
-  # Generate Convex client before building the app
   command = "npx convex codegen && vite build"
-  # Vite outputs the production build to the dist directory by default
   publish = "dist"
+
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "VITE_CONVEX_URL"
 
 [dev]
   command = "npm run dev"
