@@ -3,7 +3,7 @@
   publish = "dist/client"
 
 [build.environment]
-  SECRETS_SCAN_OMIT_KEYS = "VITE_CONVEX_URL"
+  SECRETS_SCAN_OMIT_KEYS = "VITE_CONVEX_URL,VITE_CONVEX_SITE_URL"
 
 [dev]
   command = "npm run dev"
