@@ -1,6 +1,10 @@
 [build]
-  command = "vite build"
-  dir = "dist/client"
+  command = "npx convex codegen && vite build"
+  publish = "dist/client"
+
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "VITE_CONVEX_URL"
+
 [dev]
   command = "npm run dev"
   targetPort = 3000
