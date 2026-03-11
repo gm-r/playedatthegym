@@ -5,6 +5,17 @@ import { v } from "convex/values"
 export default defineSchema({
 	...authTables,
 
+	hevyUsers: defineTable({
+		userId: v.id("users"),
+		hevyId: v.string(),
+		hevyUsername: v.string(),
+		apiKey: v.string(),
+		webhookSecret: v.optional(v.string()),
+	})
+		.index("by_userId", ["userId"])
+		.index("by_hevyUsername", ["hevyUsername"])
+		.index("by_hevyId", ["hevyId"]),
+
 	spotifyTokens: defineTable({
 		userId: v.id("users"),
 		accessToken: v.string(),

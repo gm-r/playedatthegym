@@ -11,64 +11,36 @@ import {
 } from "./spotify.helpers"
 import { SpotifyApi } from "@spotify/web-api-ts-sdk"
 
-export const syncWorkoutsAndMusic = internalAction({
-	args: {},
+export const ingestWorkout = internalAction({
+	args: {
+		userId: v.id("users"),
+		workoutId: v.string(),
+	},
 	returns: v.null(),
-	handler: async (ctx) => {
-		// 1. Resolve user
-		const userId = await ctx.runQuery(internal.spotify.getFirstUserId)
-		if (!userId) {
-			console.log("No user found, skipping sync")
+	handler: async (ctx, { userId, workoutId }) => {
+		// 1. Look up the user's Hevy API key
+		const hevyUser = await ctx.runQuery(internal.hevyUsers.getByUserId, { userId })
+		if (!hevyUser) {
+			console.error(`No Hevy user found for userId ${userId}`)
 			return null
 		}
+		const apiKey = hevyUser.apiKey
 
-		// 2. Get most recent stored workout startTime
-		const latestStartTime = await ctx.runQuery(
-			internal.hevy.getMostRecentWorkoutStartTime,
-			{ userId },
+		// 2. Fetch the specific workout from Hevy API
+		const res = await fetch(
+			`https://api.hevyapp.com/v1/workouts/${workoutId}`,
+			{ headers: { "api-key": apiKey } },
 		)
 
-		// 3. Fetch most recent workout from Hevy API
-		const apiKey = process.env.HEVY_API_KEY
-		if (!apiKey) {
-			console.error("HEVY_API_KEY not set")
-			return null
-		}
-
-		let res: Response
-		try {
-			res = await fetch(
-				"https://api.hevyapp.com/v1/workouts?page=1&pageSize=1",
-				{ headers: { "api-key": apiKey } },
-			)
-		} catch (err) {
-			console.error("Hevy API fetch failed:", err)
-			return null
-		}
-
 		if (!res.ok) {
-			console.error(`Hevy API error: ${res.status}`)
+			console.error(`Hevy API error fetching workout ${workoutId}: ${res.status}`)
 			return null
 		}
 
-		const data = await res.json()
-		if (!data.workouts || data.workouts.length === 0) {
-			console.log("No workouts from Hevy API")
-			return null
-		}
-
-		const apiWorkout = data.workouts[0]
+		const apiWorkout = await res.json()
 		const mapped = mapWorkout(apiWorkout)
 
-		// 4. Compare startTime
-		if (
-			latestStartTime &&
-			new Date(mapped.startTime) <= new Date(latestStartTime)
-		) {
-			return null
-		}
-
-		// 5. Dedup and store workout
+		// 2. Dedup and store workout
 		const existingIds = await ctx.runQuery(
 			internal.hevy.getExistingWorkoutIds,
 			{ userId },
@@ -79,15 +51,13 @@ export const syncWorkoutsAndMusic = internalAction({
 				userId,
 				workouts: newWorkouts,
 			})
-			console.log(`Stored new workout: ${mapped.title}`)
+			console.log(`Webhook: stored workout ${workoutId}`)
 		}
 
-		// 6. Fetch Spotify tracks
-		const tokenDoc = await ctx.runQuery(internal.spotify.getTokens, {
-			userId,
-		})
+		// 3. Fetch Spotify recently played tracks
+		const tokenDoc = await ctx.runQuery(internal.spotify.getTokens, { userId })
 		if (!tokenDoc) {
-			console.log("No Spotify tokens, skipping music sync")
+			console.log("Webhook: no Spotify tokens, skipping music sync")
 			return null
 		}
 
@@ -98,16 +68,12 @@ export const syncWorkoutsAndMusic = internalAction({
 			const clientId = process.env.AUTH_SPOTIFY_ID
 			const clientSecret = process.env.AUTH_SPOTIFY_SECRET
 			if (!clientId || !clientSecret) {
-				console.error("Spotify credentials not set")
+				console.error("Webhook: Spotify credentials not set")
 				return null
 			}
-			const refreshed = await refreshSpotifyToken(
-				refreshToken,
-				clientId,
-				clientSecret,
-			)
+			const refreshed = await refreshSpotifyToken(refreshToken, clientId, clientSecret)
 			if (!refreshed) {
-				console.error("Failed to refresh Spotify token")
+				console.error("Webhook: failed to refresh Spotify token")
 				return null
 			}
 			accessToken = refreshed.access_token
@@ -129,22 +95,19 @@ export const syncWorkoutsAndMusic = internalAction({
 		const spotifyData = await sdk.player.getRecentlyPlayedTracks(50)
 		const tracks = spotifyData.items.map(mapSpotifyItemToTrack)
 
-		// 7. Dedup and store tracks
+		// 4. Dedup and store tracks
 		const existingTrackKeys = await ctx.runQuery(
 			internal.spotify.getExistingTrackKeys,
 			{ userId },
 		)
-		const newTracks = filterNewSpotifyTracks(
-			tracks,
-			new Set(existingTrackKeys),
-		)
+		const newTracks = filterNewSpotifyTracks(tracks, new Set(existingTrackKeys))
 
 		if (newTracks.length > 0) {
 			await ctx.runMutation(internal.spotify.storeTracks, {
 				userId,
 				tracks: newTracks,
 			})
-			console.log(`Stored ${newTracks.length} new Spotify tracks`)
+			console.log(`Webhook: stored ${newTracks.length} new Spotify tracks`)
 		}
 
 		return null

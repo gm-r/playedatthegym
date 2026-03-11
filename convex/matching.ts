@@ -131,52 +131,36 @@ export function estimateSetTimings(
 
 export function computeTrackWindows(tracks: MusicTrack[]): TrackWindow[] {
 	return tracks.map((track) => {
-		const endMs = new Date(track.playedAt).getTime()
-		const startMs = track.durationMs ? endMs - track.durationMs : endMs
+		const startMs = new Date(track.playedAt).getTime()
+		const endMs = track.durationMs ? startMs + track.durationMs : startMs
 		return { ...track, windowStartMs: startMs, windowEndMs: endMs }
 	})
 }
 
-function overlapMs(
-	aStart: number,
-	aEnd: number,
-	bStart: number,
-	bEnd: number,
-): number {
-	return Math.max(0, Math.min(aEnd, bEnd) - Math.max(aStart, bStart))
-}
 
 export function matchSongsToSets(
 	sets: SetWithTiming[],
 	trackWindows: TrackWindow[],
 ): SetWithSongs[] {
-	// Assign each track to the single set with the greatest overlap.
-	// This prevents the same song from appearing on every set it touches.
+	// Assign each track to the set that was active when the song started playing.
+	// If the song started before the first set, it belongs to the first set.
+	// This ensures a song playing at the start of a workout appears on the first set.
 	const setTracks = new Map<number, TrackWindow[]>()
 	for (let i = 0; i < sets.length; i++) {
 		setTracks.set(i, [])
 	}
 
 	for (const tw of trackWindows) {
-		let bestIdx = -1
-		let bestOverlap = 0
-
+		let targetIdx = -1
 		for (let i = 0; i < sets.length; i++) {
-			const set = sets[i]
-			const overlap = overlapMs(
-				tw.windowStartMs,
-				tw.windowEndMs,
-				set.estimatedStartMs,
-				set.estimatedEndMs,
-			)
-			if (overlap > bestOverlap) {
-				bestOverlap = overlap
-				bestIdx = i
+			if (tw.windowStartMs < sets[i].estimatedEndMs) {
+				targetIdx = i
+				break
 			}
 		}
 
-		if (bestIdx >= 0) {
-			setTracks.get(bestIdx)!.push(tw)
+		if (targetIdx >= 0) {
+			setTracks.get(targetIdx)!.push(tw)
 		}
 	}
 

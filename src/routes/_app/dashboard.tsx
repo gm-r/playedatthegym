@@ -108,13 +108,22 @@ function DashboardPage() {
 					<h1 className="display-title text-4xl font-bold tracking-tight text-[var(--sea-ink)]">
 						Workout Music
 					</h1>
-					<button
-						type="button"
-						onClick={handleSignOut}
-						className="rounded-full border border-[rgba(23,58,64,0.2)] bg-white/50 px-4 py-2 text-sm font-semibold text-[var(--sea-ink)] transition hover:-translate-y-0.5 hover:border-[rgba(23,58,64,0.35)]"
-					>
-						Sign Out
-					</button>
+					<div className="flex items-center gap-2">
+						<button
+							type="button"
+							onClick={() => navigate({ to: "/settings" })}
+							className="rounded-full border border-[rgba(23,58,64,0.2)] bg-white/50 px-4 py-2 text-sm font-semibold text-[var(--sea-ink)] transition hover:-translate-y-0.5 hover:border-[rgba(23,58,64,0.35)]"
+						>
+							Settings
+						</button>
+						<button
+							type="button"
+							onClick={handleSignOut}
+							className="rounded-full border border-[rgba(23,58,64,0.2)] bg-white/50 px-4 py-2 text-sm font-semibold text-[var(--sea-ink)] transition hover:-translate-y-0.5 hover:border-[rgba(23,58,64,0.35)]"
+						>
+							Sign Out
+						</button>
+					</div>
 				</div>
 
 				<div className="mb-8 flex flex-wrap items-center gap-3">
@@ -158,7 +167,7 @@ function DashboardPage() {
 							<WorkoutCard
 								key={card.workoutId}
 								card={card}
-								shareUrl={data.userId ? `/${data.userId}/workouts/${card.hevyWorkoutId}` : undefined}
+								shareUrl={data.hevyUsername ? `/${data.hevyUsername}/workouts/${card.hevyWorkoutId}` : undefined}
 							/>
 						))}
 					</div>

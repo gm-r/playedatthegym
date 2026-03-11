@@ -7,6 +7,11 @@ export const getWorkoutsWithMusic = query({
 		const userId = await getAuthUserId(ctx)
 		if (!userId) throw new Error("Not authenticated")
 
+		const hevyUser = await ctx.db
+			.query("hevyUsers")
+			.withIndex("by_userId", (q) => q.eq("userId", userId))
+			.unique()
+
 		const workouts = await ctx.db
 			.query("workouts")
 			.withIndex("by_userId", (q) => q.eq("userId", userId))
@@ -17,6 +22,11 @@ export const getWorkoutsWithMusic = query({
 			.withIndex("by_userId", (q) => q.eq("userId", userId))
 			.collect()
 
-		return { userId, workouts, musicHistory }
+		return {
+			userId,
+			hevyUsername: hevyUser?.hevyUsername ?? null,
+			workouts,
+			musicHistory,
+		}
 	},
 })

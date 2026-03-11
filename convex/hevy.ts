@@ -167,8 +167,11 @@ export const fetchWorkouts = action({
 		const userId = await getAuthUserId(ctx)
 		if (!userId) throw new Error("Not authenticated")
 
-		const apiKey = process.env.HEVY_API_KEY
-		if (!apiKey) throw new Error("HEVY_API_KEY environment variable not set")
+		const hevyUser = await ctx.runQuery(internal.hevyUsers.getByUserId, {
+			userId,
+		})
+		if (!hevyUser) throw new Error("No Hevy account linked. Please link your Hevy account first.")
+		const apiKey = hevyUser.apiKey
 
 		// Fetch all workouts from Hevy API with pagination
 		let page = 1
